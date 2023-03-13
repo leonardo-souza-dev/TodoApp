@@ -1,6 +1,7 @@
 ﻿using System.Text;
+using TodoApp.Services;
 
-namespace TodoApp
+namespace TodoApp.ConsoleApp
 {
     /// <summary>
     /// 
@@ -60,6 +61,8 @@ namespace TodoApp
     /// 3) Mensagem para quando não houver tarefas (ao listar)
     /// BONUS: Opcão no menu pra listagem de finalizadas e não-finalizadas
     /// 
+    /// Contrai tudo (métodos)
+    /// CTRL M + O 
     /// </summary>
     internal class Program
     {
@@ -67,90 +70,95 @@ namespace TodoApp
 
         static void Main(string[] args)
         {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine("TODO App");
 
-            //
-            var caminhoCompleto = Path.Combine(Environment.CurrentDirectory, _nomeArquivo);
-            if (!File.Exists(caminhoCompleto))
-            {
-                File.Create(caminhoCompleto).Close();
-            }
-            //
+            CriarPreAjustes();
 
+            ExibirMenu();
 
+            Console.WriteLine("Saindo...");            
+        }
 
+        #region Métodos Privados
+
+        private static void ExibirMenu()
+        {
             string escolha = String.Empty;
 
-            while (escolha != "S" && escolha != "s")
+            while (escolha != "S")
             {
+                Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("*** MENU ***");
                 Console.WriteLine("[N] Nova tarefa");
-                Console.WriteLine("[L] Listar tarefas");
+                Console.WriteLine("[L] Listar tarefas finalizadas");
+                Console.WriteLine("[A] Listar tarefas em aberto");
                 Console.WriteLine("[F] Finalizar tarefa");
                 Console.WriteLine("[S] Sair");
+                Console.ForegroundColor = ConsoleColor.Gray;
 
-                escolha = Console.ReadLine();
+                escolha = Console.ReadLine().ToUpperInvariant();
+
+                var tarefaService = new TarefaService();
 
                 switch (escolha)
                 {
                     case "N":
-                    case "n":
                         Console.WriteLine("Descrição da tarefa:");
-
                         string descricaoTarefa = Console.ReadLine();
 
-                        Console.WriteLine("Nova tarefa criada: " + descricaoTarefa);
+                        var tarefa = tarefaService.CriarTarefa(descricaoTarefa);
 
-                        /*
-                        using (FileStream fs = File.Create(_nomeArquivo))
-                        {
-                            Byte[] titulo = new UTF8Encoding(true).GetBytes("Tarefas:" + Environment.NewLine); //CR LF
-                            fs.Write(titulo, 0, titulo.Length);
-                            byte[] tarefa = new UTF8Encoding(true).GetBytes(descricaoTarefa);
-                            fs.Write(tarefa, 0, tarefa.Length);
-                        }
-                        */
-                        using (StreamWriter sw = File.AppendText(caminhoCompleto))
-                        {
-                            sw.WriteLine(descricaoTarefa);
-                        }
+                        Console.WriteLine("Nova tarefa criada: " + tarefa.Descricao);
                         break;
-                    case "L":
-                    case "l":
-                        using (StreamReader sr = File.OpenText(caminhoCompleto))
+                    case "L": //Listar tarefas finalizadas
+
+                        var tarefasFinalizadas = tarefaService.ListarTarefasFinalizadas();
+
+                        if (tarefasFinalizadas.Any())
                         {
-                            string s = "";
-                            while ((s = sr.ReadLine()) != null)
-                            {
-                                Console.WriteLine(s);
-                            }
+                            tarefasFinalizadas.ForEach(tf => Console.WriteLine(tf.Descricao));
+                        }
+                        else
+                        {
+                            Console.WriteLine("Não há tarefas finalizadas");
+                        }
+
+                        break;
+                    case "A": //Listar tarefas em aberto
+                        var tarefasEmAberto = tarefaService.ListarTarefasEmAberto();
+
+                        if (tarefasEmAberto.Any())
+                        {
+                            tarefasEmAberto.ForEach(tf => Console.WriteLine(tf.Descricao));
+                        }
+                        else
+                        {
+                            Console.WriteLine("Não há tarefas em aberto");
                         }
                         break;
                     case "F":
-                    case "f":
                         Console.WriteLine("Digite a descrição da tarefa que deseja cancelar");
-
                         var descricaoTarefaCancelar = Console.ReadLine();
-
-                        String[] linhas = File.ReadAllLines(caminhoCompleto);
-
-                        for (int i = 0; i < linhas.Length; i++)
-                        {
-                            if (linhas[i] == descricaoTarefaCancelar)
-                            {
-                                linhas[i] = $"{linhas[i]};F";
-                            }
-                        }
-
-                        File.WriteAllLines(caminhoCompleto, linhas);
-
+                        tarefaService.FinalizarTarefa(descricaoTarefaCancelar);
                         break;
                     default:
                         break;
                 }
             }
-
-            Console.WriteLine("Saindo...");            
         }
+
+        private static void CriarPreAjustes()
+        {  
+            if (!File.Exists(ObterCaminhoCompletoDoArquivo()))
+            {
+                File.Create(ObterCaminhoCompletoDoArquivo()).Close();
+            }
+        }
+
+        private static string ObterCaminhoCompletoDoArquivo() 
+            => Path.Combine(Environment.CurrentDirectory, _nomeArquivo);
+
+        #endregion
     }
 }

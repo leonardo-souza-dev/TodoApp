@@ -1,0 +1,4 @@
+Beber agua;0
+Estudar SQL;1
+Estudar MongoDb;0
+Estudar MongoDb;0
